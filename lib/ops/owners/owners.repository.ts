@@ -1,7 +1,7 @@
 import type { Owner, CreateOwnerInput, UpdateOwnerInput } from "@/lib/types/ops"
 
 const BASE = "/api/ops/owners"
-
+//TODO Change to use the new API
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
