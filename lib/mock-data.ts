@@ -26,13 +26,13 @@ export function parseLocalDate(iso: string): Date {
 export function getStatusColor(status: TaskStatus) {
   switch (status) {
     case "en progreso":
-      return "bg-primary/20 text-primary-foreground border-primary"
+      return "bg-primary text-primary-foreground border-primary"
     case "pendiente":
-      return "bg-secondary/20 text-secondary-foreground border-secondary"
+      return "bg-secondary text-secondary-foreground border-secondary"
     case "bloqueada":
-      return "bg-accent/20 text-accent-foreground border-accent"
+      return "bg-accent text-accent-foreground border-accent"
     case "completada":
-      return "bg-muted/20 text-muted-foreground border-muted"
+      return "bg-muted text-muted-foreground border-muted"
   }
 }
 
