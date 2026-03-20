@@ -49,8 +49,8 @@ export function AlertsStrip() {
               variant="outline"
               className={
                 isBlocked
-                  ? "border-accent bg-accent/20 text-accent-foreground"
-                  : "border-primary bg-primary/20 text-primary-foreground"
+                  ? "border-accent bg-accent text-accent-foreground"
+                  : "border-primary bg-primary text-primary-foreground"
               }
             >
               {isBlocked ? (
