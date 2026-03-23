@@ -15,6 +15,7 @@ import { getStatusColor, parseLocalDate } from "@/lib/mock-data"
 import type { TaskArea, TaskStatus } from "@/lib/types/ops"
 import { useTasks } from "@/lib/ops/tasks/tasks.queries"
 import { useOwners } from "@/lib/ops/owners/owners.queries"
+import { EditTaskDialog } from "@/components/ops/create-dialogs"
 import { ListChecks, ChevronLeft, ChevronRight } from "lucide-react"
 import {
   format,
@@ -51,6 +52,7 @@ export function TareasSection({
   const [mounted, setMounted] = useState(false)
   const [calendarMode, setCalendarMode] = useState<"month" | "week">("month")
   const [currentDate, setCurrentDate] = useState(() => new Date())
+  const [editTaskId, setEditTaskId] = useState<string | null>(null)
   useEffect(() => setMounted(true), [])
 
   const { data: tasks = [], isLoading } = useTasks()
@@ -60,7 +62,7 @@ export function TareasSection({
     return tasks.filter((t) => {
       if (filterArea !== "all" && t.area !== filterArea) return false
       if (filterStatus !== "all" && t.status !== filterStatus) return false
-      if (filterOwner !== "all" && t.ownerId !== filterOwner) return false
+      if (filterOwner !== "all" && t.user_id !== filterOwner) return false
       return true
     })
   }, [tasks, filterArea, filterStatus, filterOwner])
@@ -88,6 +90,7 @@ export function TareasSection({
   )
 
   return (
+    <>
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
@@ -157,13 +160,22 @@ export function TareasSection({
             </p>
           )}
           {filteredTasks.map((t) => {
-            const owner = t.ownerId ? ownerById[t.ownerId] : undefined
+            const owner = t.user_id ? ownerById[t.user_id] : undefined
             const avatarBg = owner?.color?.startsWith("#") ? owner.color : undefined
             const avatarClass = avatarBg ? "" : owner?.color ?? ""
             return (
               <div
                 key={t.id}
-                className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2"
+                role="button"
+                tabIndex={0}
+                onClick={() => setEditTaskId(t.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    setEditTaskId(t.id)
+                  }
+                }}
+                className="flex cursor-pointer items-center gap-3 rounded-md border border-border bg-card px-3 py-2 outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Badge
                   variant="outline"
@@ -273,12 +285,17 @@ export function TareasSection({
                       {format(day, "d")}
                     </span>
                     {dayTasks.slice(0, 2).map((t) => (
-                      <div
+                      <button
                         key={t.id}
-                        className={`mb-0.5 truncate rounded-sm px-1 py-px text-[8px] font-medium ${getStatusColor(t.status)}`}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditTaskId(t.id)
+                        }}
+                        className={`mb-0.5 w-full cursor-pointer truncate rounded-sm px-1 py-px text-left text-[8px] font-medium ${getStatusColor(t.status)}`}
                       >
                         {t.title}
-                      </div>
+                      </button>
                     ))}
                     {dayTasks.length > 2 && (
                       <span className="text-[8px] text-muted-foreground">
@@ -293,5 +310,7 @@ export function TareasSection({
         )}
       </CardContent>
     </Card>
+    <EditTaskDialog taskId={editTaskId} onOpenChange={(o) => !o && setEditTaskId(null)} />
+    </>
   )
 }
