@@ -24,8 +24,12 @@ export function useTasks(params?: FetchTasksParams) {
   })
 }
 
-export function useTask(id: string) {
-  return useQuery({ queryKey: taskKeys.detail(id), queryFn: () => fetchTask(id) })
+export function useTask(id: string | null | undefined) {
+  return useQuery({
+    queryKey: taskKeys.detail(id ?? ""),
+    queryFn: () => fetchTask(id!),
+    enabled: Boolean(id),
+  })
 }
 
 export function useCreateTask() {
