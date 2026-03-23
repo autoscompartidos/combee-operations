@@ -49,7 +49,7 @@ export function mapTask(row: Row): Task {
     title: row.title,
     area: row.area,
     status: row.status,
-    user_id: row.owner_id,
+    user_id: row.user_id,
     dueDate: row.due_date,
     campaignId: row.campaign_id,
     b2bLeadId: row.b2b_lead_id,
