@@ -28,6 +28,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if (parsed.data.b2bLeadId !== undefined) update.b2b_lead_id = parsed.data.b2bLeadId
   if (parsed.data.timeSlot !== undefined) update.time_slot = parsed.data.timeSlot
   if(parsed.data.notes !== undefined) update.notes = parsed.data.notes
+  if(parsed.data.user_id !== undefined) update.user_id = parsed.data.user_id
 
   const supabase = await getSupabaseServerClient()
   const { data, error } = await supabase

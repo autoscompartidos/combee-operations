@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,10 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { TaskStatus } from "@/lib/types/ops";
 import { useOwners } from "@/lib/ops/owners/owners.queries";
-import { useCreateTask } from "@/lib/ops/tasks/tasks.queries";
-import { useCreateCampaign } from "@/lib/ops/campaigns/campaigns.queries";
-import { useCreateB2BLead } from "@/lib/ops/b2b-leads/b2b-leads.queries";
+import { useCreateTask, useTask, useUpdateTask } from "@/lib/ops/tasks/tasks.queries";
+import { useCampaigns, useCreateCampaign } from "@/lib/ops/campaigns/campaigns.queries";
+import { useB2BLeads, useCreateB2BLead } from "@/lib/ops/b2b-leads/b2b-leads.queries";
 import {
   CreateTaskSchema,
   CreateCampaignSchema,
@@ -177,6 +179,340 @@ export function CreateTaskDialog({ open, onOpenChange }: DialogProps) {
             </Button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ===== Editar Tarea =====
+
+type EditTaskForm = z.infer<typeof CreateTaskSchema>;
+
+const UNASSIGNED = "__unassigned__";
+const NONE_CAMPAIGN = "__none_campaign__";
+const NONE_B2B = "__none_b2b__";
+
+const TASK_STATUSES: TaskStatus[] = [
+  "pendiente",
+  "en progreso",
+  "bloqueada",
+  "completada",
+];
+
+export function EditTaskDialog({
+  taskId,
+  onOpenChange,
+}: {
+  taskId: string | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const open = taskId !== null;
+  const { data: task, isLoading, isError, error } = useTask(taskId);
+  const { data: owners = [] } = useOwners();
+  const { data: campaigns = [] } = useCampaigns();
+  const { data: b2bLeads = [] } = useB2BLeads();
+  const updateTask = useUpdateTask();
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<EditTaskForm>({
+    resolver: zodResolver(CreateTaskSchema),
+  });
+
+  useEffect(() => {
+    if (!task) return;
+    reset({
+      title: task.title,
+      area: task.area,
+      status: task.status,
+      user_id: task.user_id,
+      notes: task.notes ?? "",
+      dueDate: task.dueDate,
+      campaignId: task.campaignId,
+      b2bLeadId: task.b2bLeadId,
+      timeSlot: task.timeSlot,
+    });
+  }, [task, reset]);
+
+  const watchedUserId = watch("user_id");
+  const displayOwner = owners.find((o) => o.id === watchedUserId);
+
+  async function onSubmit(values: EditTaskForm) {
+    if (!taskId) return;
+    setSaveError(null);
+    const input = {
+      ...values,
+      notes: values.notes === "" ? null : values.notes,
+    };
+    try {
+      await updateTask.mutateAsync({ id: taskId, input });
+      onOpenChange(false);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "No se pudo guardar");
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) {
+          setSaveError(null);
+          onOpenChange(false);
+        }
+      }}
+    >
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          {isLoading && (
+            <DialogTitle className="line-clamp-2 pr-6">Cargando…</DialogTitle>
+          )}
+          {isError && (
+            <DialogTitle className="line-clamp-2 pr-6">No se pudo cargar</DialogTitle>
+          )}
+          {!isLoading && !isError && task && (
+            <>
+              <DialogTitle
+                asChild
+                className="field-sizing-content min-h-[3rem] w-full max-w-full resize-none border-0 bg-transparent p-0 pr-6 text-left text-lg leading-tight font-semibold shadow-none outline-none placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <textarea id="edit-task-title" rows={2} {...register("title")} />
+              </DialogTitle>
+              {errors.title && (
+                <p className="text-xs text-destructive">{errors.title.message}</p>
+              )}
+            </>
+          )}
+        </DialogHeader>
+
+        {isLoading && (
+          <p className="py-8 text-center text-sm text-muted-foreground">Cargando…</p>
+        )}
+        {isError && (
+          <p className="py-4 text-sm text-destructive">
+            {error instanceof Error ? error.message : "No se pudo cargar la tarea"}
+          </p>
+        )}
+
+        {!isLoading && !isError && task && (
+          <>
+            {displayOwner ? (
+              <div className="flex items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-2">
+                <div
+                  className={`flex size-9 items-center justify-center rounded-full text-xs font-bold ${
+                    displayOwner.color?.startsWith("#") ? "" : displayOwner.color
+                  }`}
+                  style={
+                    displayOwner.color?.startsWith("#")
+                      ? { backgroundColor: displayOwner.color }
+                      : undefined
+                  }
+                >
+                  {displayOwner.avatar}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-muted-foreground">Responsable</p>
+                  <p className="truncate text-sm font-semibold">{displayOwner.name}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-md border border-dashed border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                Sin responsable asignado. Podés elegir uno más abajo.
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 pt-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label>Área</Label>
+                  <Controller
+                    name="area"
+                    control={control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Área" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Orgánico">Orgánico</SelectItem>
+                          <SelectItem value="B2B">B2B</SelectItem>
+                          <SelectItem value="Activación">Activación</SelectItem>
+                          <SelectItem value="Difusión">Difusión</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.area && (
+                    <p className="text-xs text-destructive">{errors.area.message}</p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>Estado</Label>
+                  <Controller
+                    name="status"
+                    control={control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TASK_STATUSES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.status && (
+                    <p className="text-xs text-destructive">{errors.status.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label>Responsable</Label>
+                <Controller
+                  name="user_id"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ?? UNASSIGNED}
+                      onValueChange={(v) =>
+                        field.onChange(v === UNASSIGNED ? null : v)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Responsable" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={UNASSIGNED}>Sin asignar</SelectItem>
+                        {owners.map((o) => (
+                          <SelectItem key={o.id} value={o.id}>
+                            {o.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="edit-task-notes">Notas</Label>
+                <Textarea id="edit-task-notes" rows={4} {...register("notes")} />
+                {errors.notes && (
+                  <p className="text-xs text-destructive">{errors.notes.message}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="edit-task-due">Fecha límite</Label>
+                  <Input id="edit-task-due" type="date" {...register("dueDate")} />
+                  {errors.dueDate && (
+                    <p className="text-xs text-destructive">{errors.dueDate.message}</p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="edit-task-time">Horario (opcional)</Label>
+                  <Input
+                    id="edit-task-time"
+                    type="time"
+                    {...register("timeSlot", {
+                      setValueAs: (v) => (v === "" || v == null ? null : v),
+                    })}
+                  />
+                  {errors.timeSlot && (
+                    <p className="text-xs text-destructive">{errors.timeSlot.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label>Campaña vinculada</Label>
+                  <Controller
+                    name="campaignId"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value ?? NONE_CAMPAIGN}
+                        onValueChange={(v) =>
+                          field.onChange(v === NONE_CAMPAIGN ? null : v)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Ninguna" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NONE_CAMPAIGN}>Ninguna</SelectItem>
+                          {campaigns.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>Lead B2B vinculado</Label>
+                  <Controller
+                    name="b2bLeadId"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value ?? NONE_B2B}
+                        onValueChange={(v) =>
+                          field.onChange(v === NONE_B2B ? null : v)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Ninguno" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NONE_B2B}>Ninguno</SelectItem>
+                          {b2bLeads.map((l) => (
+                            <SelectItem key={l.id} value={l.id}>
+                              {l.partnerName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {saveError && (
+                <p className="text-xs text-destructive">{saveError}</p>
+              )}
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Cerrar
+                </Button>
+                <Button type="submit" disabled={isSubmitting || updateTask.isPending}>
+                  {updateTask.isPending ? "Guardando…" : "Guardar cambios"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
