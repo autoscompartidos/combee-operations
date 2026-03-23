@@ -37,6 +37,8 @@ export async function POST(request: Request) {
       campaign_id: parsed.data.campaignId,
       b2b_lead_id: parsed.data.b2bLeadId,
       time_slot: parsed.data.timeSlot,
+      user_id: parsed.data.user_id,
+      notes: parsed.data.notes,
     })
     .select()
     .single()
