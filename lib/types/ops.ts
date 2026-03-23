@@ -29,7 +29,7 @@ export type Campaign = {
   startDate: string
   endDate: string
   status: CampaignStatus
-  ownerId: string | null
+  user_id: string | null
   priority: CampaignPriority
   color: string
   createdAt: string
@@ -43,7 +43,7 @@ export type B2BLead = {
   stage: B2BStage
   nextAction: string
   nextActionDate: string | null
-  ownerId: string | null
+  user_id: string | null
   createdAt: string
   updatedAt: string
 }
@@ -77,13 +77,13 @@ export type UpdateOwnerInput = Partial<CreateOwnerInput>
 
 export type CreateCampaignInput = Pick<
   Campaign,
-  "name" | "startDate" | "endDate" | "status" | "ownerId" | "priority" | "color"
+  "name" | "startDate" | "endDate" | "status" | "user_id" | "priority" | "color"
 >
 export type UpdateCampaignInput = Partial<CreateCampaignInput>
 
 export type CreateB2BLeadInput = Pick<
   B2BLead,
-  "partnerName" | "type" | "stage" | "nextAction" | "nextActionDate" | "ownerId"
+  "partnerName" | "type" | "stage" | "nextAction" | "nextActionDate" | "user_id"
 >
 export type UpdateB2BLeadInput = Partial<CreateB2BLeadInput>
 

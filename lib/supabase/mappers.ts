@@ -21,7 +21,7 @@ export function mapCampaign(row: Row): Campaign {
     startDate: row.start_date,
     endDate: row.end_date,
     status: row.status,
-    ownerId: row.owner_id,
+    user_id: row.user_id,
     priority: row.priority,
     color: row.color,
     createdAt: row.created_at,
@@ -37,7 +37,7 @@ export function mapB2BLead(row: Row): B2BLead {
     stage: row.stage,
     nextAction: row.next_action,
     nextActionDate: row.next_action_date,
-    ownerId: row.owner_id,
+    user_id: row.user_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
