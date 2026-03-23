@@ -69,7 +69,7 @@ export const CreateB2BLeadSchema = z.object({
   stage: B2BStageSchema,
   nextAction: z.string().min(1),
   nextActionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
-  ownerId: z.string().uuid().nullable(),
+  user_id: z.string().uuid().nullable(),
 })
 
 export const UpdateB2BLeadSchema = CreateB2BLeadSchema.partial()
