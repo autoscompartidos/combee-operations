@@ -23,11 +23,11 @@ export async function PATCH(request: Request, { params }: Params) {
   if (parsed.data.title !== undefined) update.title = parsed.data.title
   if (parsed.data.area !== undefined) update.area = parsed.data.area
   if (parsed.data.status !== undefined) update.status = parsed.data.status
-  if (parsed.data.ownerId !== undefined) update.owner_id = parsed.data.ownerId
   if (parsed.data.dueDate !== undefined) update.due_date = parsed.data.dueDate
   if (parsed.data.campaignId !== undefined) update.campaign_id = parsed.data.campaignId
   if (parsed.data.b2bLeadId !== undefined) update.b2b_lead_id = parsed.data.b2bLeadId
   if (parsed.data.timeSlot !== undefined) update.time_slot = parsed.data.timeSlot
+  if(parsed.data.notes !== undefined) update.notes = parsed.data.notes
 
   const supabase = await getSupabaseServerClient()
   const { data, error } = await supabase

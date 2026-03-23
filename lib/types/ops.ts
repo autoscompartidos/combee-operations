@@ -53,8 +53,9 @@ export type Task = {
   title: string
   area: TaskArea
   status: TaskStatus
-  ownerId: string | null
   dueDate: string
+  notes: string | null
+  user_id: string | null
   campaignId: string | null
   b2bLeadId: string | null
   timeSlot: string | null
@@ -88,6 +89,6 @@ export type UpdateB2BLeadInput = Partial<CreateB2BLeadInput>
 
 export type CreateTaskInput = Pick<
   Task,
-  "title" | "area" | "status" | "ownerId" | "dueDate" | "campaignId" | "b2bLeadId" | "timeSlot"
+  "title" | "area" | "status" | "notes" | "user_id" | "dueDate" | "campaignId" | "b2bLeadId" | "timeSlot"
 >
 export type UpdateTaskInput = Partial<CreateTaskInput>

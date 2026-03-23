@@ -77,11 +77,12 @@ export const UpdateB2BLeadSchema = CreateB2BLeadSchema.partial()
 // ─── Task ─────────────────────────────────────────────────────────────────────
 
 export const CreateTaskSchema = z.object({
+  user_id: z.string().uuid().nullable(),
   title: z.string().min(1).max(300),
   area: TaskAreaSchema,
   status: TaskStatusSchema,
-  ownerId: z.string().uuid().nullable(),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  notes: z.string().nullable(),
   campaignId: z.string().uuid().nullable(),
   b2bLeadId: z.string().uuid().nullable(),
   timeSlot: z
