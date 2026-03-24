@@ -29,8 +29,12 @@ export async function POST(request: Request) {
       partner_name: parsed.data.partnerName,
       type: parsed.data.type,
       stage: parsed.data.stage,
-      next_action: parsed.data.nextAction,
+      next_action: parsed.data.nextAction,  
       next_action_date: parsed.data.nextActionDate,
+      contact_name: parsed.data.contact_name,
+      contact_phone: parsed.data.contact_phone,
+      contact_email: parsed.data.contact_email,
+      user_id: parsed.data.user_id,
     })
     .select()
     .single()

@@ -44,6 +44,9 @@ export type B2BLead = {
   nextAction: string
   nextActionDate: string | null
   user_id: string | null
+  contact_name: string | null
+  contact_phone: string | null
+  contact_email: string | null
   createdAt: string
   updatedAt: string
 }
@@ -83,7 +86,7 @@ export type UpdateCampaignInput = Partial<CreateCampaignInput>
 
 export type CreateB2BLeadInput = Pick<
   B2BLead,
-  "partnerName" | "type" | "stage" | "nextAction" | "nextActionDate" | "user_id"
+  "partnerName" | "type" | "stage" | "nextAction" | "nextActionDate" | "user_id" | "contact_name" | "contact_phone" | "contact_email"
 >
 export type UpdateB2BLeadInput = Partial<CreateB2BLeadInput>
 

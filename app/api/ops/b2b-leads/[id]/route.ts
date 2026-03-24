@@ -26,6 +26,9 @@ export async function PATCH(request: Request, { params }: Params) {
   if (parsed.data.nextAction !== undefined) update.next_action = parsed.data.nextAction
   if (parsed.data.nextActionDate !== undefined) update.next_action_date = parsed.data.nextActionDate
   if (parsed.data.user_id !== undefined) update.user_id = parsed.data.user_id
+  if (parsed.data.contact_name !== undefined) update.contact_name = parsed.data.contact_name
+  if (parsed.data.contact_phone !== undefined) update.contact_phone = parsed.data.contact_phone
+  if (parsed.data.contact_email !== undefined) update.contact_email = parsed.data.contact_email
 
   const supabase = await getSupabaseServerClient()
   const { data, error } = await supabase
