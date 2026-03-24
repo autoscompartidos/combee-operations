@@ -25,7 +25,11 @@ export function useB2BLeads(params?: FetchB2BLeadsParams) {
 }
 
 export function useB2BLead(id: string) {
-  return useQuery({ queryKey: b2bLeadKeys.detail(id), queryFn: () => fetchB2BLead(id) })
+  return useQuery({
+    queryKey: b2bLeadKeys.detail(id),
+    queryFn: () => fetchB2BLead(id),
+    enabled: Boolean(id),
+  })
 }
 
 export function useCreateB2BLead() {

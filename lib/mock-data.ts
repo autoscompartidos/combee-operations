@@ -94,3 +94,12 @@ export const B2B_STAGES: B2BStage[] = [
   "Activo",
   "Rechazado",
 ]
+
+export const B2B_TYPES: B2BType[] = [
+  "Estación de servicio",
+  "Productora",
+  "Hostel",
+  "Residencias",
+  "Universidad",
+  "Centro Estudiantil",
+]
