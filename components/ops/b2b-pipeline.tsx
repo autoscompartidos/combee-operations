@@ -29,11 +29,16 @@ import type { B2BLead, B2BStage, Owner } from "@/lib/types/ops"
 import { useB2BLeads, useUpdateB2BLead } from "@/lib/ops/b2b-leads/b2b-leads.queries"
 import { useOwners } from "@/lib/ops/owners/owners.queries"
 import { cn } from "@/lib/utils"
-import { Handshake, CalendarDays } from "lucide-react"
+import Link from "next/link"
+import { ExternalLink, Handshake, CalendarDays } from "lucide-react"
 import { format, addDays, eachDayOfInterval } from "date-fns"
 import { es } from "date-fns/locale"
 
 type ItemsByStage = Record<B2BStage, string[]>
+
+/** Referencias estables: el default `= []` en hooks crea un array nuevo por render y rompe deps de useEffect. */
+const EMPTY_B2B_LEADS: B2BLead[] = []
+const EMPTY_OWNERS: Owner[] = []
 
 function buildItemsByStage(leads: B2BLead[]): ItemsByStage {
   const map: ItemsByStage = {
@@ -121,8 +126,11 @@ function LeadCardContent({
   const avatarClass = avatarBg ? "" : owner?.color ?? ""
   return (
     <div className={cn("rounded-md border border-border bg-card p-2.5 shadow-sm", className)}>
-      <p className="text-xs font-medium leading-tight text-foreground">{lead.partnerName}</p>
-      <Badge variant="outline" className={`mt-1.5 text-[9px] ${getB2BStageColor(lead.stage)}`}>
+      <p className="break-words text-xs font-medium leading-tight text-foreground">{lead.partnerName}</p>
+      <Badge
+        variant="outline"
+        className={`mt-1.5 max-w-full whitespace-normal break-words text-[9px] ${getB2BStageColor(lead.stage)}`}
+      >
         {getB2BTypeShort(lead.type)}
       </Badge>
       <p className="mt-1.5 text-[10px] leading-tight text-muted-foreground">{lead.nextAction}</p>
@@ -162,12 +170,14 @@ function SortableLeadCard({
   }
   return (
     <div ref={setNodeRef} style={style} className={cn(isDragging && "z-10")}>
-      <div
-        {...attributes}
-        {...listeners}
-        className="touch-none outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <LeadCardContent lead={lead} owner={owner} className="cursor-grab active:cursor-grabbing" />
+      <div className="relative">
+        <div
+          {...attributes}
+          {...listeners}
+          className="touch-none outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <LeadCardContent lead={lead} owner={owner} className="cursor-grab active:cursor-grabbing" />
+        </div>
       </div>
     </div>
   )
@@ -211,8 +221,10 @@ function KanbanColumn({
 }
 
 export function B2BPipeline() {
-  const { data: b2bLeads = [], isLoading } = useB2BLeads()
-  const { data: owners = [] } = useOwners()
+  const { data: b2bLeadsData, isLoading } = useB2BLeads()
+  const b2bLeads = b2bLeadsData ?? EMPTY_B2B_LEADS
+  const { data: ownersData } = useOwners()
+  const owners = ownersData ?? EMPTY_OWNERS
   const { mutateAsync: updateB2BLead } = useUpdateB2BLead()
 
   const ownerById = useMemo(

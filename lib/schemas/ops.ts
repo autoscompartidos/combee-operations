@@ -70,6 +70,9 @@ export const CreateB2BLeadSchema = z.object({
   nextAction: z.string().min(1),
   nextActionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
   user_id: z.string().uuid().nullable(),
+  contact_name: z.string().min(1).max(200).nullable(),
+  contact_phone: z.string().min(1).max(200).nullable(),
+  contact_email: z.string().min(1).max(200).nullable(),
 })
 
 export const UpdateB2BLeadSchema = CreateB2BLeadSchema.partial()

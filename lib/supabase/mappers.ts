@@ -38,6 +38,9 @@ export function mapB2BLead(row: Row): B2BLead {
     nextAction: row.next_action,
     nextActionDate: row.next_action_date,
     user_id: row.user_id,
+    contact_name: row.contact_name,
+    contact_phone: row.contact_phone,
+    contact_email: row.contact_email,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
