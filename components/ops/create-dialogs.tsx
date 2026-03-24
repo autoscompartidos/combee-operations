@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,17 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +36,12 @@ import {
 } from "@/components/ui/select";
 import type { TaskStatus } from "@/lib/types/ops";
 import { useOwners } from "@/lib/ops/owners/owners.queries";
-import { useCreateTask, useTask, useUpdateTask } from "@/lib/ops/tasks/tasks.queries";
+import {
+  useCreateTask,
+  useDeleteTask,
+  useTask,
+  useUpdateTask,
+} from "@/lib/ops/tasks/tasks.queries";
 import { useCampaigns, useCreateCampaign } from "@/lib/ops/campaigns/campaigns.queries";
 import { useB2BLeads, useCreateB2BLead } from "@/lib/ops/b2b-leads/b2b-leads.queries";
 import {
@@ -186,6 +203,8 @@ export function CreateTaskDialog({ open, onOpenChange }: DialogProps) {
 
 // ===== Editar Tarea =====
 
+// ===== Editar Tarea =====
+
 type EditTaskForm = z.infer<typeof CreateTaskSchema>;
 
 const UNASSIGNED = "__unassigned__";
@@ -212,7 +231,9 @@ export function EditTaskDialog({
   const { data: campaigns = [] } = useCampaigns();
   const { data: b2bLeads = [] } = useB2BLeads();
   const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const {
     register,
@@ -258,6 +279,18 @@ export function EditTaskDialog({
     }
   }
 
+  async function onDeleteTask() {
+    if (!taskId) return;
+    setSaveError(null);
+    setConfirmDeleteOpen(false);
+    try {
+      await deleteTask.mutateAsync(taskId);
+      onOpenChange(false);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "No se pudo eliminar");
+    }
+  }
+
   return (
     <Dialog
       open={open}
@@ -268,8 +301,9 @@ export function EditTaskDialog({
         }
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader className="space-y-3 border-b border-border pb-4">
+          <DialogTitle className="sr-only">Editar tarea</DialogTitle>
           {isLoading && (
             <DialogTitle className="line-clamp-2 pr-6">Cargando…</DialogTitle>
           )}
@@ -327,8 +361,12 @@ export function EditTaskDialog({
               </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 pt-2">
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6 pt-4">
+              <div className="rounded-lg border border-border bg-muted/20 p-4">
+                <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Datos principales
+                </p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5">
                   <Label>Área</Label>
                   <Controller
@@ -376,121 +414,134 @@ export function EditTaskDialog({
                     <p className="text-xs text-destructive">{errors.status.message}</p>
                   )}
                 </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label>Responsable</Label>
-                <Controller
-                  name="user_id"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value ?? UNASSIGNED}
-                      onValueChange={(v) =>
-                        field.onChange(v === UNASSIGNED ? null : v)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Responsable" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={UNASSIGNED}>Sin asignar</SelectItem>
-                        {owners.map((o) => (
-                          <SelectItem key={o.id} value={o.id}>
-                            {o.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="edit-task-notes">Notas</Label>
-                <Textarea id="edit-task-notes" rows={4} {...register("notes")} />
-                {errors.notes && (
-                  <p className="text-xs text-destructive">{errors.notes.message}</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="edit-task-due">Fecha límite</Label>
-                  <Input id="edit-task-due" type="date" {...register("dueDate")} />
-                  {errors.dueDate && (
-                    <p className="text-xs text-destructive">{errors.dueDate.message}</p>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="edit-task-time">Horario (opcional)</Label>
-                  <Input
-                    id="edit-task-time"
-                    type="time"
-                    {...register("timeSlot", {
-                      setValueAs: (v) => (v === "" || v == null ? null : v),
-                    })}
-                  />
-                  {errors.timeSlot && (
-                    <p className="text-xs text-destructive">{errors.timeSlot.message}</p>
-                  )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="flex flex-col gap-1.5">
-                  <Label>Campaña vinculada</Label>
-                  <Controller
-                    name="campaignId"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value ?? NONE_CAMPAIGN}
-                        onValueChange={(v) =>
-                          field.onChange(v === NONE_CAMPAIGN ? null : v)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Ninguna" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={NONE_CAMPAIGN}>Ninguna</SelectItem>
-                          {campaigns.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+              <div className="rounded-lg border border-border bg-background p-4">
+                <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Asignación y notas
+                </p>
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <Label>Responsable</Label>
+                    <Controller
+                      name="user_id"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value ?? UNASSIGNED}
+                          onValueChange={(v) =>
+                            field.onChange(v === UNASSIGNED ? null : v)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Responsable" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={UNASSIGNED}>Sin asignar</SelectItem>
+                            {owners.map((o) => (
+                              <SelectItem key={o.id} value={o.id}>
+                                {o.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="edit-task-notes">Notas</Label>
+                    <Textarea id="edit-task-notes" rows={4} {...register("notes")} />
+                    {errors.notes && (
+                      <p className="text-xs text-destructive">{errors.notes.message}</p>
                     )}
-                  />
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label>Lead B2B vinculado</Label>
-                  <Controller
-                    name="b2bLeadId"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value ?? NONE_B2B}
-                        onValueChange={(v) =>
-                          field.onChange(v === NONE_B2B ? null : v)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Ninguno" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={NONE_B2B}>Ninguno</SelectItem>
-                          {b2bLeads.map((l) => (
-                            <SelectItem key={l.id} value={l.id}>
-                              {l.partnerName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+              </div>
+
+              <div className="rounded-lg border border-border bg-background p-4">
+                <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Fechas y vínculos
+                </p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="edit-task-due">Fecha límite</Label>
+                    <Input id="edit-task-due" type="date" {...register("dueDate")} />
+                    {errors.dueDate && (
+                      <p className="text-xs text-destructive">{errors.dueDate.message}</p>
                     )}
-                  />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="edit-task-time">Horario (opcional)</Label>
+                    <Input
+                      id="edit-task-time"
+                      type="time"
+                      {...register("timeSlot", {
+                        setValueAs: (v) => (v === "" || v == null ? null : v),
+                      })}
+                    />
+                    {errors.timeSlot && (
+                      <p className="text-xs text-destructive">{errors.timeSlot.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <Label>Campaña vinculada</Label>
+                    <Controller
+                      name="campaignId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value ?? NONE_CAMPAIGN}
+                          onValueChange={(v) =>
+                            field.onChange(v === NONE_CAMPAIGN ? null : v)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Ninguna" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NONE_CAMPAIGN}>Ninguna</SelectItem>
+                            {campaigns.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label>Lead B2B vinculado</Label>
+                    <Controller
+                      name="b2bLeadId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value ?? NONE_B2B}
+                          onValueChange={(v) =>
+                            field.onChange(v === NONE_B2B ? null : v)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Ninguno" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NONE_B2B}>Ninguno</SelectItem>
+                            {b2bLeads.map((l) => (
+                              <SelectItem key={l.id} value={l.id}>
+                                {l.partnerName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -498,17 +549,69 @@ export function EditTaskDialog({
                 <p className="text-xs text-destructive">{saveError}</p>
               )}
 
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
+              <DialogFooter className="flex items-center justify-between gap-2 border-t border-border pt-4 sm:justify-between">
+                <AlertDialog
+                  open={confirmDeleteOpen}
+                  onOpenChange={setConfirmDeleteOpen}
                 >
-                  Cerrar
-                </Button>
-                <Button type="submit" disabled={isSubmitting || updateTask.isPending}>
-                  {updateTask.isPending ? "Guardando…" : "Guardar cambios"}
-                </Button>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={
+                        isSubmitting || updateTask.isPending || deleteTask.isPending
+                      }
+                      size="icon"
+                      aria-label="Eliminar tarea"
+                      className="bg-red-300 hover:bg-red-600"
+                      title="Eliminar tarea"
+                    >
+                      <Trash2
+                        className={`size-4 ${
+                          deleteTask.isPending ? "animate-pulse" : ""
+                        }`}
+                      />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        ¿Eliminar esta tarea?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta acción no se puede deshacer.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={deleteTask.isPending}>
+                        Cancelar
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={onDeleteTask}
+                        disabled={deleteTask.isPending}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {deleteTask.isPending ? "Eliminando..." : "Eliminar"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    disabled={deleteTask.isPending}
+                  >
+                    Cerrar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting || updateTask.isPending || deleteTask.isPending}
+                  >
+                    {updateTask.isPending ? "Guardando…" : "Guardar cambios"}
+                  </Button>
+                </div>
               </DialogFooter>
             </form>
           </>
@@ -538,7 +641,7 @@ export function CreateCampaignDialog({ open, onOpenChange }: DialogProps) {
       status: "planificada",
       priority: "media",
       color: "bg-secondary",
-      ownerId: null,
+      user_id: null,
     },
   });
 
@@ -593,7 +696,7 @@ export function CreateCampaignDialog({ open, onOpenChange }: DialogProps) {
             <div className="flex flex-col gap-1.5">
               <Label>Responsable</Label>
               <Controller
-                name="ownerId"
+                name="user_id"
                 control={control}
                 render={({ field }) => (
                   <Select
@@ -678,7 +781,7 @@ export function CreateLeadDialog({ open, onOpenChange }: DialogProps) {
       stage: "Lead",
       nextAction: "",
       nextActionDate: null,
-      ownerId: null,
+      user_id: null,
     },
   });
 
@@ -746,7 +849,7 @@ export function CreateLeadDialog({ open, onOpenChange }: DialogProps) {
             <div className="flex flex-col gap-1.5">
               <Label>Responsable</Label>
               <Controller
-                name="ownerId"
+                name="user_id"
                 control={control}
                 render={({ field }) => (
                   <Select

@@ -34,7 +34,7 @@ export const CreateCampaignSchema = z
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     status: CampaignStatusSchema,
-    ownerId: z.string().uuid().nullable(),
+    user_id: z.string().uuid().nullable(),
     priority: CampaignPrioritySchema,
     color: z.string().min(1),
   })
